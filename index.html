@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>The Apartment Reset</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
+<style>
+/* Layout: one column. One big "up next" card is the whole point; lists sit below it, quiet. Two-person colour coding is the only accent. */
+:root{
+  --bg:#f1f4f7; --surface:#ffffff; --fg:#1b2730; --muted:#5d6b76; --line:#d9e0e6;
+  --ben:#0f6e73; --ben-soft:#dff1f1; --lauren:#a2425a; --lauren-soft:#f6e3e8; --both:#5a5f9e; --both-soft:#e6e6f4;
+  --done:#2b8a4f; --done-soft:#e1f3e7; --track:#e3e8ed; --focus-bg:#ffffff; --inv:#ffffff;
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --body:"Nunito Sans","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#141a1f; --surface:#1d252c; --fg:#e8edf1; --muted:#9aa7b2; --line:#2e3942;
+  --ben:#5fc8cc; --ben-soft:#163a3c; --lauren:#f08aa0; --lauren-soft:#432330; --both:#a9adeb; --both-soft:#2a2c4b;
+  --done:#6ad08e; --done-soft:#1b3a28; --track:#2a333b; --focus-bg:#1d252c; --inv:#141a1f; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141a1f; --surface:#1d252c; --fg:#e8edf1; --muted:#9aa7b2; --line:#2e3942;
+  --ben:#5fc8cc; --ben-soft:#163a3c; --lauren:#f08aa0; --lauren-soft:#432330; --both:#a9adeb; --both-soft:#2a2c4b;
+  --done:#6ad08e; --done-soft:#1b3a28; --track:#2a333b; --focus-bg:#1d252c; --inv:#141a1f; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.5;margin:0}
+.wrap{max-width:600px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:1.6rem;font-weight:700}
+h2{font-size:1.15rem;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--both);outline-offset:2px}
+
+header.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:18px 14px;flex-wrap:wrap}
+.who-toggle{display:flex;background:var(--track);border-radius:99px;padding:3px}
+.who-toggle button{background:transparent;color:var(--muted);padding:7px 16px;border-radius:99px;font-weight:700;font-family:var(--display)}
+.who-toggle button[aria-pressed="true"].ben{background:var(--ben);color:var(--inv)}
+.who-toggle button[aria-pressed="true"].lauren{background:var(--lauren);color:var(--inv)}
+
+/* The one card */
+.focus{background:var(--focus-bg);border:1px solid var(--line);border-radius:20px;padding:22px 20px;margin-block:8px 28px;position:relative;overflow:hidden}
+.focus.ben{border-top:6px solid var(--ben)}
+.focus.lauren{border-top:6px solid var(--lauren)}
+.focus .kicker{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.focus .task{font-family:var(--display);font-size:1.9rem;font-weight:800;line-height:1.08;margin-top:10px;text-wrap:balance;overflow-wrap:anywhere}
+.focus .first{margin-top:8px;color:var(--muted)}
+.focus .first b{color:var(--fg);font-weight:700}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn-go{background:var(--fg);color:var(--bg);padding:14px 20px;font-weight:700;font-family:var(--display);font-size:1.05rem;flex:1 1 auto;min-width:150px}
+.btn-done{background:var(--done);color:#fff;padding:14px 20px;font-weight:700;font-family:var(--display);font-size:1.05rem;flex:1 1 auto;min-width:120px}
+.btn-skip{background:transparent;color:var(--muted);padding:12px 10px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.timer{display:none;margin-top:18px;align-items:center;gap:16px;flex-wrap:wrap}
+.timer.on{display:flex}
+.timer .clock{font-family:var(--display);font-size:3rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;min-width:4.2ch}
+.timer .ring{flex:1;height:10px;background:var(--track);border-radius:99px;overflow:hidden;min-width:120px}
+.timer .ring i{display:block;height:100%;width:100%;background:var(--done);transition:width 1s linear}
+.timer .hint{width:100%;color:var(--muted);font-size:.9rem}
+.focus.allclear .task{color:var(--done)}
+.nextup{margin-top:14px;font-size:.92rem;color:var(--muted);overflow-wrap:anywhere}
+.nextup b{color:var(--fg)}
+
+/* Momentum row */
+.momentum{display:grid;gap:8px;margin-bottom:28px}
+.mrow{display:grid;grid-template-columns:5.5em repeat(7,1fr);gap:6px;align-items:center}
+.mrow .lbl{font-weight:700;font-family:var(--display);font-size:.9rem}
+.mrow .lbl.ben{color:var(--ben)}.mrow .lbl.lauren{color:var(--lauren)}
+.dot{aspect-ratio:1;border-radius:50%;background:var(--track);display:grid;place-items:center;font-size:.65rem;color:var(--muted);font-weight:700;max-width:34px;width:100%;margin:0 auto}
+.dot.some{background:var(--done-soft);color:var(--done);border:2px solid var(--done)}
+.dot.all{background:var(--done);color:#fff}
+.dot.today{outline:2px dashed var(--muted);outline-offset:2px}
+.mnote{font-size:.85rem;color:var(--muted);margin-top:4px}
+
+section{margin-bottom:30px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.sec-head .note{font-size:.85rem;color:var(--muted)}
+.sec-head .edit{background:transparent;color:var(--muted);font-size:.85rem;font-weight:700;padding:4px 8px;text-decoration:underline;text-underline-offset:3px}
+.sec-head .edit[aria-pressed="true"]{color:var(--fg)}
+ul.tasks{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding-inline:14px}
+ul.tasks li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+ul.tasks li:first-child{border-top:0}
+ul.tasks li.empty{color:var(--muted);font-size:.95rem}
+ul.tasks label{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
+ul.tasks input[type=checkbox]{appearance:none;flex:none;width:24px;height:24px;margin:0;border:2px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;display:grid;place-items:center;transition:background .15s,border-color .15s}
+ul.tasks input[type=checkbox]:checked{background:var(--done);border-color:var(--done)}
+ul.tasks input[type=checkbox]:checked::after{content:"";width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+ul.tasks input[type=checkbox]:disabled{opacity:.6;cursor:not-allowed}
+.t{min-width:0;flex:1}
+.t .name{font-weight:600;overflow-wrap:anywhere}
+.t .sub{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere}
+li.done .t .name{text-decoration:line-through;color:var(--muted)}
+.chip{flex:none;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:99px}
+.chip.ben{background:var(--ben-soft);color:var(--ben)}
+.chip.lauren{background:var(--lauren-soft);color:var(--lauren)}
+.chip.both{background:var(--both-soft);color:var(--both)}
+.mins{flex:none;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.rowbtns{display:flex;gap:4px;flex:none}
+.rowbtns button{background:var(--track);color:var(--fg);font-size:.8rem;font-weight:700;padding:6px 10px;border-radius:8px}
+.rowbtns button.rm{color:var(--lauren)}
+
+/* Add / edit form */
+.addbtn{width:100%;margin-top:8px;background:transparent;border:1.5px dashed var(--line);color:var(--muted);padding:11px;font-weight:700;border-radius:14px}
+.addbtn:hover{color:var(--fg);border-color:var(--muted)}
+form.jobform{display:none;margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;gap:10px;grid-template-columns:1fr 1fr}
+form.jobform.on{display:grid}
+form.jobform .full{grid-column:1/-1}
+form.jobform label{display:grid;gap:4px;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);min-width:0}
+form.jobform input,form.jobform select{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+form.jobform .fbtns{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+form.jobform .save{background:var(--fg);color:var(--bg);padding:10px 18px;font-weight:700}
+form.jobform .cancel{background:transparent;color:var(--muted);padding:10px 12px;font-weight:600}
+@media (max-width:420px){form.jobform{grid-template-columns:1fr}}
+
+.status{font-size:.8rem;color:var(--muted);text-align:center;padding-top:10px}
+.status.err{color:var(--lauren)}
+canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+.focus.pop{animation:pop .35s ease}
+@media (prefers-reduced-motion: reduce){.focus.pop{animation:none}.timer .ring i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Ben &amp; Lauren</div>
+      <h1>The Apartment Reset</h1>
+    </div>
+    <div class="who-toggle" role="group" aria-label="Who's using this">
+      <button class="ben" id="whoBen" aria-pressed="true">Ben</button>
+      <button class="lauren" id="whoLauren" aria-pressed="false">Lauren</button>
+    </div>
+  </header>
+
+  <div class="focus ben" id="focus">
+    <div class="kicker"><span class="eyebrow" id="fKicker">Up next</span><span class="eyebrow" id="fCount"></span></div>
+    <div class="task" id="fTask">—</div>
+    <p class="first" id="fFirst"></p>
+    <div class="timer" id="timer">
+      <div class="clock" id="clock">5:00</div>
+      <div class="ring"><i id="ring"></i></div>
+      <div class="hint">Timer's running. Stop when it beeps, even if you're not finished. Finished counts, stopped counts.</div>
+    </div>
+    <div class="actions" id="actions">
+      <button class="btn-go" id="btnGo">Start 5 min</button>
+      <button class="btn-done" id="btnDone">Done</button>
+      <button class="btn-skip" id="btnSkip">Not this one</button>
+    </div>
+    <p class="nextup" id="fNext"></p>
+    <div class="actions" id="seedWrap" hidden><button class="btn-go" id="btnSeed">Load the starter jobs</button></div>
+  </div>
+
+  <div class="momentum" id="momentum"></div>
+
+  <section>
+    <div class="sec-head"><h2>Today</h2><span class="note" id="dayNote">One tick is a good day.</span><button class="edit" id="editDay" aria-pressed="false">Edit</button></div>
+    <ul class="tasks" id="daily"></ul>
+    <button class="addbtn" id="addDay">+ Add a daily job</button>
+    <form class="jobform" id="formDay" autocomplete="off">
+      <label class="full">Job <input id="fdName" maxlength="60" placeholder="e.g. Feed the cat" required></label>
+      <label class="full">First move (optional) <input id="fdFirst" maxlength="90" placeholder="The smallest physical thing to start it"></label>
+      <label>Minutes <input id="fdMins" type="number" min="1" max="60" value="5"></label>
+      <label>Whose <select id="fdWho"><option value="ben">Ben</option><option value="lauren">Lauren</option></select></label>
+      <div class="fbtns"><button type="button" class="cancel" id="fdCancel">Cancel</button><button type="submit" class="save">Save</button></div>
+    </form>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>This week</h2><span class="note">Pick one when you've got 20 minutes.</span><button class="edit" id="editWeek" aria-pressed="false">Edit</button></div>
+    <ul class="tasks" id="weekly"></ul>
+    <button class="addbtn" id="addWeek">+ Add a weekly job</button>
+    <form class="jobform" id="formWeek" autocomplete="off">
+      <label class="full">Job <input id="fwName" maxlength="60" placeholder="e.g. Clean the fridge" required></label>
+      <label class="full">First move (optional) <input id="fwFirst" maxlength="90" placeholder="The smallest physical thing to start it"></label>
+      <label>Minutes <input id="fwMins" type="number" min="1" max="120" value="20"></label>
+      <label>Whose <select id="fwWho"><option value="ben">Ben</option><option value="lauren">Lauren</option><option value="both">Both</option></select></label>
+      <div class="fbtns"><button type="button" class="cancel" id="fwCancel">Cancel</button><button type="submit" class="save">Save</button></div>
+    </form>
+  </section>
+
+  <p class="status" id="status">Connecting…</p>
+</div>
+<canvas class="confetti" id="confetti" hidden></canvas>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // ===== PASTE YOUR FIREBASE CONFIG HERE (Firebase console > Project settings > Your apps > Web app) =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyCq-vy4-lztAt56sM3_hZccv-s6XQUBe4s",
+    authDomain: "apartment-reset.firebaseapp.com",
+    projectId: "apartment-reset",
+    storageBucket: "apartment-reset.firebasestorage.app",
+    messagingSenderId: "298523709730",
+    appId: "1:298523709730:web:c0e8eae14d8ca6ef93157b"
+  };
+  // A random name for your household's data. Anyone who has this page has this; keep the link between the two of you.
+  const HOUSE = "KqWbnp_HtTckM3kmUg_k";
+  // =======================================================================================================
+
+  // Starter jobs, loaded once by the button on an empty page.
+  const STARTER = [
+    {id:'b_dishes', kind:'day', who:'ben', name:'Clear the sink', first:'Open the dishwasher. Put one thing in.', mins:5, order:1},
+    {id:'b_counters', kind:'day', who:'ben', name:'Wipe the counters', first:'Pick up the cloth. Spray once.', mins:3, order:2},
+    {id:'b_pickup', kind:'day', who:'ben', name:'5-minute pickup', first:'Grab one cup off the table.', mins:5, order:3},
+    {id:'l_dishes', kind:'day', who:'lauren', name:'Dishes in, dishwasher on', first:'Rinse one plate. Just one.', mins:5, order:4},
+    {id:'l_clothes', kind:'day', who:'lauren', name:'Clothes to the hamper', first:'Pick up what\u2019s nearest your feet.', mins:2, order:5},
+    {id:'l_reset', kind:'day', who:'lauren', name:'10-minute living room reset', first:'Fold the blanket. Then see.', mins:10, order:6},
+    {id:'w_kitchen', kind:'week', who:'ben', name:'Kitchen clean', first:'Put the kettle on. Clear the stove while it boils.', mins:20, order:10},
+    {id:'w_bins', kind:'week', who:'ben', name:'Bins and recycling out', first:'Tie the one that\u2019s fullest.', mins:5, order:11},
+    {id:'w_laundry', kind:'week', who:'lauren', name:'Laundry washed and put away', first:'Carry the hamper to the machine.', mins:20, order:12},
+    {id:'w_bath', kind:'week', who:'lauren', name:'Bathroom wipe', first:'Spray the mirror.', mins:10, order:13},
+    {id:'w_sunday', kind:'week', who:'both', name:'Sunday: vacuum + the worst room', first:'Plug the vacuum in. Music on.', mins:20, order:14},
+  ];
+
+  // ---------- Dates (the day rolls over at 5am, not midnight, for late shifts) ----------
+  const pad = n => String(n).padStart(2,'0');
+  const shifted = new Date(Date.now() - 5*3600e3);
+  const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const today = new Date(shifted); today.setHours(0,0,0,0);
+  const dayKey = keyOf(today);
+  const mon = new Date(today); mon.setDate(mon.getDate() - ((mon.getDay()+6)%7));
+  const weekKey = keyOf(mon);
+  const weekDays = []; for (let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); weekDays.push(keyOf(d)); }
+
+  // ---------- State ----------
+  // jobs: {id, kind:'day'|'week', who:'ben'|'lauren'|'both', name, first, mins, order}
+  const state = { jobs:[], jobsLoaded:false, week:{}, days:{} };
+  let db = null, canWrite = true, me = 'ben', skipped = new Set(), editing = {day:false, week:false}, editingId = null;
+  try { const s = localStorage.getItem('reset_me'); if (s==='ben'||s==='lauren') me = s; } catch(_){}
+  const $ = id => document.getElementById(id);
+  const statusEl = $('status');
+  const whoLabel = {ben:'Ben', lauren:'Lauren', both:'Both'};
+  const dayItems = k => state.days[k] || {};
+  const jobsOf = (kind, who) => state.jobs.filter(j => j.kind===kind && (who==null || j.who===who)).sort((a,b)=>(a.order||0)-(b.order||0));
+
+  // ---------- Who ----------
+  function setMe(w){ me = w; skipped.clear(); stopTimer(); try{ localStorage.setItem('reset_me', w); }catch(_){} render(); }
+  $('whoBen').addEventListener('click', () => setMe('ben'));
+  $('whoLauren').addEventListener('click', () => setMe('lauren'));
+
+  // ---------- Focus logic ----------
+  let current = null;
+  function pickNext(){
+    const d = dayItems(dayKey);
+    const mine = jobsOf('day', me).filter(t => !d[t.id]);
+    const order = mine.filter(t=>!skipped.has(t.id)).concat(mine.filter(t=>skipped.has(t.id)));
+    if (order.length) return {task:order[0], bucket:'day'};
+    const wk = jobsOf('week').filter(t => (t.who===me||t.who==='both') && !state.week[t.id]);
+    const worder = wk.filter(t=>!skipped.has(t.id)).concat(wk.filter(t=>skipped.has(t.id)));
+    if (worder.length) return {task:worder[0], bucket:'week'};
+    return null;
+  }
+  function renderFocus(){
+    const f = $('focus'); f.className = 'focus '+me;
+    $('whoBen').setAttribute('aria-pressed', me==='ben'); $('whoLauren').setAttribute('aria-pressed', me==='lauren');
+    const d = dayItems(dayKey);
+    const mineAll = jobsOf('day', me);
+    const doneToday = mineAll.filter(t=>d[t.id]).length;
+    current = pickNext();
+    $('fFirst').innerHTML=''; $('fNext').innerHTML='';
+    if (!current){
+      f.classList.add('allclear');
+      $('actions').hidden = true;
+      if (!state.jobsLoaded){ $('fKicker').textContent='Loading'; $('fCount').textContent=''; $('fTask').textContent='One sec.'; return; }
+      if (!state.jobs.length){ $('fKicker').textContent='Empty'; $('fCount').textContent=''; $('fTask').textContent='No jobs yet.'; $('fFirst').textContent='Load the starter set, or add your own below.'; $('seedWrap').hidden = !(db && canWrite); return; }
+      $('seedWrap').hidden = true;
+      $('fKicker').textContent = 'All clear'; $('fCount').textContent = '';
+      $('fTask').textContent = 'Nothing left for you. Go sit down.';
+      $('fFirst').textContent = 'Today’s jobs and this week’s are all ticked.';
+      return;
+    }
+    f.classList.remove('allclear'); $('seedWrap').hidden = true;
+    $('actions').hidden = !canWrite;
+    const t = current.task;
+    if (current.bucket==='day'){
+      $('fKicker').textContent = doneToday===0 ? 'Up next' : (doneToday===mineAll.length-1 ? 'Last one' : 'Good day already. One more?');
+      $('fCount').textContent = `${doneToday} of ${mineAll.length} today`;
+    } else {
+      $('fKicker').textContent = (mineAll.length ? 'Today’s done. ' : '') + 'Got ' + t.mins + ' minutes?';
+      $('fCount').textContent = 'This week';
+    }
+    $('fTask').textContent = t.name;
+    if (t.first){ const b=document.createElement('b'); b.textContent='First move: '; $('fFirst').append(b, t.first); }
+    $('btnGo').textContent = 'Start ' + t.mins + ' min';
+    const others = current.bucket==='day' ? mineAll.filter(x=>!d[x.id] && x.id!==t.id) : [];
+    if (others.length){ const bb=document.createElement('b'); bb.textContent='After this: '; $('fNext').append(bb, others.map(o=>o.name).join(' · ')); }
+    else if (current.bucket==='day'){ $('fNext').textContent = 'Last one for today.'; }
+  }
+
+  // ---------- Timer ----------
+  let tHandle = null, tEnd = 0, tTotal = 0, audio = null;
+  function startTimer(mins){
+    stopTimer();
+    tTotal = mins*60e3; tEnd = Date.now()+tTotal;
+    $('timer').classList.add('on'); $('btnGo').textContent = 'Stop timer';
+    tick(); tHandle = setInterval(tick, 500);
+  }
+  function stopTimer(){ if (tHandle){ clearInterval(tHandle); tHandle=null; } $('timer').classList.remove('on'); if (current) $('btnGo').textContent = 'Start '+current.task.mins+' min'; }
+  function tick(){
+    const left = Math.max(0, tEnd - Date.now());
+    const s = Math.ceil(left/1000);
+    $('clock').textContent = Math.floor(s/60)+':'+pad(s%60);
+    $('ring').style.width = (100*left/tTotal)+'%';
+    if (left<=0){ beep(); stopTimer(); $('fKicker').textContent='Time. Tick it and stop.'; }
+  }
+  function beep(){
+    try{
+      audio = audio || new (window.AudioContext||window.webkitAudioContext)();
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.connect(g); g.connect(audio.destination); o.frequency.value = 880; g.gain.value = .08;
+      o.start(); o.stop(audio.currentTime + .35);
+    }catch(_){}
+  }
+  $('btnGo').addEventListener('click', () => { if (!current) return; if (tHandle) stopTimer(); else { try{ audio = audio || new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} startTimer(current.task.mins); } });
+  $('btnDone').addEventListener('click', () => { if (!current) return; stopTimer(); toggle(current.bucket, current.task.id, true); celebrate(); });
+  $('btnSkip').addEventListener('click', () => { if (!current) return; stopTimer(); skipped.add(current.task.id); renderFocus(); });
+
+  // ---------- Celebration ----------
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function celebrate(){
+    const f = $('focus'); f.classList.remove('pop'); void f.offsetWidth; f.classList.add('pop');
+    if (reduce) return;
+    const c = $('confetti'); c.hidden=false; c.width=innerWidth; c.height=innerHeight;
+    const ctx = c.getContext('2d'); const cs = getComputedStyle(document.documentElement);
+    const cols = [cs.getPropertyValue('--done').trim(), cs.getPropertyValue('--'+me).trim(), '#f5c542'];
+    const ps = Array.from({length:70}, () => ({x:c.width/2+(Math.random()-.5)*160, y:c.height*0.3, vx:(Math.random()-.5)*9, vy:-Math.random()*9-3, r:4+Math.random()*4, col:cols[Math.floor(Math.random()*cols.length)], a:Math.random()*6}));
+    const t0 = performance.now();
+    (function frame(t){
+      ctx.clearRect(0,0,c.width,c.height);
+      for (const p of ps){ p.x+=p.vx; p.y+=p.vy; p.vy+=.35; p.a+=.1; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillStyle=p.col; ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r); ctx.restore(); }
+      if (t - t0 < 1300) requestAnimationFrame(frame); else { ctx.clearRect(0,0,c.width,c.height); c.hidden=true; }
+    })(t0);
+  }
+
+  // ---------- Lists + momentum ----------
+  function renderList(el, items, bucket, showWho){
+    el.innerHTML = '';
+    const src = bucket==='day' ? dayItems(dayKey) : state.week;
+    if (!items.length){
+      const li = document.createElement('li'); li.className='empty';
+      li.textContent = state.jobsLoaded ? (bucket==='day' ? `No daily jobs for ${whoLabel[me]} yet. Add one below.` : 'No weekly jobs yet. Add one below.') : 'Loading…';
+      el.appendChild(li); return;
+    }
+    for (const it of items){
+      const done = !!src[it.id];
+      const li = document.createElement('li'); if (done) li.className='done';
+      const label = document.createElement('label');
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=done; cb.id=`${bucket}_${it.id}`; cb.disabled = !canWrite;
+      cb.addEventListener('change', () => { toggle(bucket, it.id, cb.checked); if (cb.checked) celebrate(); });
+      const t = document.createElement('div'); t.className='t';
+      const n = document.createElement('div'); n.className='name'; n.textContent=it.name; t.appendChild(n);
+      if (editing[bucket] && it.first){ const s=document.createElement('div'); s.className='sub'; s.textContent=it.first; t.appendChild(s); }
+      label.append(cb,t); li.appendChild(label);
+      if (showWho){ const c=document.createElement('span'); c.className='chip '+(it.who); c.textContent=whoLabel[it.who]; li.appendChild(c); }
+      if (editing[bucket]){
+        const rb = document.createElement('div'); rb.className='rowbtns';
+        const e = document.createElement('button'); e.type='button'; e.textContent='Edit'; e.addEventListener('click', () => openForm(bucket, it));
+        const r = document.createElement('button'); r.type='button'; r.className='rm'; r.textContent='Remove'; r.addEventListener('click', () => removeJob(it));
+        rb.append(e,r); li.appendChild(rb);
+      } else {
+        const m=document.createElement('span'); m.className='mins'; m.textContent=it.mins+' min'; li.appendChild(m);
+      }
+      el.appendChild(li);
+    }
+  }
+  function renderMomentum(){
+    const el = $('momentum'); el.innerHTML='';
+    const names = ['M','T','W','T','F','S','S'];
+    for (const who of ['ben','lauren']){
+      const mine = jobsOf('day', who);
+      const row = document.createElement('div'); row.className='mrow';
+      const l = document.createElement('span'); l.className='lbl '+who; l.textContent=whoLabel[who]; row.appendChild(l);
+      weekDays.forEach((k,i) => {
+        const d = dayItems(k); const n = mine.filter(t=>d[t.id]).length;
+        const dot = document.createElement('div'); dot.className='dot'+((mine.length && n>=mine.length)?' all':n>0?' some':'')+(k===dayKey?' today':'');
+        dot.textContent = n>0 ? n : names[i]; dot.title = k; row.appendChild(dot);
+      });
+      el.appendChild(row);
+    }
+    const note = document.createElement('p'); note.className='mnote'; note.textContent='Dots are days with at least one tick. Missed days don’t undo anything.'; el.appendChild(note);
+  }
+  function render(){
+    renderFocus();
+    renderList($('daily'), jobsOf('day', me), 'day', false);
+    renderList($('weekly'), jobsOf('week'), 'week', true);
+    renderMomentum();
+    const n = jobsOf('day', me).length;
+    $('dayNote').textContent = n>1 ? `One tick is a good day. ${n} is a great one.` : 'One tick is a good day.';
+    $('editDay').setAttribute('aria-pressed', editing.day); $('editDay').textContent = editing.day ? 'Done editing' : 'Edit';
+    $('editWeek').setAttribute('aria-pressed', editing.week); $('editWeek').textContent = editing.week ? 'Done editing' : 'Edit';
+    $('addDay').hidden = !canWrite; $('addWeek').hidden = !canWrite; $('editDay').hidden = !canWrite; $('editWeek').hidden = !canWrite;
+  }
+  $('editDay').addEventListener('click', () => { editing.day = !editing.day; render(); });
+  $('editWeek').addEventListener('click', () => { editing.week = !editing.week; render(); });
+
+  // ---------- Add / edit / remove jobs ----------
+  const forms = {day:{form:$('formDay'), name:$('fdName'), first:$('fdFirst'), mins:$('fdMins'), who:$('fdWho'), add:$('addDay'), cancel:$('fdCancel')},
+                 week:{form:$('formWeek'), name:$('fwName'), first:$('fwFirst'), mins:$('fwMins'), who:$('fwWho'), add:$('addWeek'), cancel:$('fwCancel')}};
+  function openForm(kind, job){
+    const f = forms[kind]; editingId = job ? job.id : null;
+    f.name.value = job ? job.name : ''; f.first.value = job ? (job.first||'') : '';
+    f.mins.value = job ? job.mins : (kind==='day' ? 5 : 20);
+    f.who.value = job ? job.who : (kind==='day' ? me : me);
+    f.form.classList.add('on'); f.add.hidden = true; f.name.focus();
+  }
+  function closeForm(kind){ const f=forms[kind]; f.form.classList.remove('on'); f.add.hidden = !canWrite; editingId=null; }
+  for (const kind of ['day','week']){
+    const f = forms[kind];
+    f.add.addEventListener('click', () => openForm(kind, null));
+    f.cancel.addEventListener('click', () => closeForm(kind));
+    f.form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const name = f.name.value.trim(); if (!name) return;
+      const mins = Math.max(1, Math.min(120, parseInt(f.mins.value,10) || (kind==='day'?5:20)));
+      const existing = editingId ? state.jobs.find(j=>j.id===editingId) : null;
+      const job = { id: editingId || ('j_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)), kind, who: f.who.value, name, first: f.first.value.trim(), mins,
+                    order: existing ? (existing.order||0) : (Math.max(0, ...state.jobs.map(j=>j.order||0)) + 1) };
+      const i = state.jobs.findIndex(j=>j.id===job.id); if (i>=0) state.jobs[i]=job; else state.jobs.push(job);
+      closeForm(kind); render();
+      if (!db){ statusEl.textContent='Not saved: no connection to the database.'; return; }
+      try { await db.doc('jobs/'+job.id).set(job); statusEl.textContent='Saved.'; statusEl.className='status'; }
+      catch(e){ saveError(e); }
+    });
+  }
+  async function removeJob(job){
+    state.jobs = state.jobs.filter(j=>j.id!==job.id); render();
+    if (!db) return;
+    try { await db.doc('jobs/'+job.id).delete(); statusEl.textContent='Removed.'; statusEl.className='status'; }
+    catch(e){ saveError(e); }
+  }
+  function saveError(e){
+    if (e && e.code==='permission-denied'){ canWrite=false; render(); statusEl.textContent='The database rules are blocking writes. Check firestore.rules.'; }
+    else statusEl.textContent='Couldn’t save that. Try again in a moment.';
+    statusEl.className='status err';
+  }
+
+  // ---------- Ticks ----------
+  const queues = {}; const exists = {};
+  function pathFor(bucket){ return bucket==='day' ? 'days/'+dayKey : 'weeks/'+weekKey; }
+  function toggle(bucket, id, checked){
+    const val = checked ? {at:new Date().toISOString(), by:me} : null;
+    if (bucket==='day'){ state.days[dayKey] = Object.assign({}, dayItems(dayKey), {[id]:val}); } else { state.week[id] = val; }
+    render();
+    if (!db) { statusEl.textContent = 'Not saved: no connection to the database.'; return; }
+    const p = pathFor(bucket);
+    queues[p] = (queues[p]||Promise.resolve()).then(async () => {
+      const ref = db.doc(p); const body = {items:{[id]: val}};
+      const write = async () => { if (exists[p]) await ref.update(body); else { await ref.set(body); exists[p]=true; } };
+      try { await write(); statusEl.textContent='Saved.'; statusEl.className='status'; }
+      catch(e){
+        if (e && e.code==='unavailable'){ await new Promise(r=>setTimeout(r,400+Math.random()*600)); try{ await write(); statusEl.textContent='Saved.'; statusEl.className='status'; return; }catch(_){} }
+        saveError(e);
+      }
+    });
+  }
+
+  $('btnSeed').addEventListener('click', async () => {
+    if (!db) return; $('btnSeed').disabled = true;
+    try { for (const j of STARTER) await db.doc('jobs/'+j.id).set(j); statusEl.textContent='Starter jobs loaded.'; statusEl.className='status'; }
+    catch(e){ saveError(e); } finally { $('btnSeed').disabled = false; }
+  });
+  render();
+
+  // ---------- Shared storage: Firebase Firestore ----------
+  const onErr = () => { statusEl.textContent='Live sync dropped. Reload to reconnect.'; statusEl.className='status err'; };
+  try {
+    const app = initializeApp(firebaseConfig);
+    const fs = getFirestore(app);
+    const base = 'houses/' + HOUSE;
+    const fdoc = p => doc(fs, base + '/' + p);
+    db = {
+      doc: p => ({
+        set: data => setDoc(fdoc(p), data, {merge:true}),
+        update: data => setDoc(fdoc(p), data, {merge:true}),
+        delete: () => deleteDoc(fdoc(p)),
+        onSnapshot: (next, err) => onSnapshot(fdoc(p), snap => next({exists: snap.exists(), data: () => snap.data()}), err),
+      }),
+      collection: p => ({
+        onSnapshot: (next, err) => onSnapshot(collection(fs, base + '/' + p), snap => next({docs: snap.docs.map(d => ({id:d.id, data:()=>d.data()}))}), err),
+      }),
+    };
+    statusEl.textContent='Synced.';
+    db.collection('jobs').onSnapshot(snap => { state.jobs = snap.docs.map(d => Object.assign({id:d.id}, d.data())); state.jobsLoaded = true; render(); }, onErr);
+    db.doc('weeks/'+weekKey).onSnapshot(snap => { exists['weeks/'+weekKey]=snap.exists; state.week = Object.assign({}, snap.exists ? (snap.data().items||{}) : {}); render(); }, onErr);
+    for (const k of weekDays){
+      db.doc('days/'+k).onSnapshot(snap => { exists['days/'+k]=snap.exists; state.days[k] = Object.assign({}, snap.exists ? (snap.data().items||{}) : {}); render(); }, onErr);
+    }
+  } catch(e){
+    state.jobsLoaded = true; render();
+    statusEl.textContent = 'Database not set up yet. Check the firebaseConfig block at the top of the script.'; statusEl.className='status err';
+  }
+</script>
+</body>
+</html>
