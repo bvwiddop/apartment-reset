@@ -98,7 +98,7 @@ li.done .t .name{text-decoration:line-through;color:var(--muted)}
 .chip.lauren{background:var(--lauren-soft);color:var(--lauren)}
 .chip.both{background:var(--both-soft);color:var(--both)}
 .mins{flex:none;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.rowbtns{display:flex;gap:4px;flex:none}
+.rowbtns{display:flex;gap:4px;flex:none;flex-wrap:wrap;justify-content:flex-end}
 .rowbtns button{background:var(--track);color:var(--fg);font-size:.8rem;font-weight:700;padding:6px 10px;border-radius:8px}
 .rowbtns button.rm{color:var(--lauren)}
 
@@ -362,7 +362,8 @@ canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
         const rb = document.createElement('div'); rb.className='rowbtns';
         const e = document.createElement('button'); e.type='button'; e.textContent='Edit'; e.addEventListener('click', () => openForm(bucket, it));
         const r = document.createElement('button'); r.type='button'; r.className='rm'; r.textContent='Remove'; r.addEventListener('click', () => removeJob(it));
-        rb.append(e,r); li.appendChild(rb);
+        const mv = document.createElement('button'); mv.type='button'; mv.textContent = bucket==='day' ? '\u2192 Weekly' : '\u2192 Today'; mv.addEventListener('click', () => moveJob(it));
+        rb.append(e,mv,r); li.appendChild(rb);
       } else {
         const m=document.createElement('span'); m.className='mins'; m.textContent=it.mins+' min'; li.appendChild(m);
       }
@@ -432,6 +433,17 @@ canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
     state.jobs = state.jobs.filter(j=>j.id!==job.id); render();
     if (!db) return;
     try { await db.doc('jobs/'+job.id).delete(); statusEl.textContent='Removed.'; statusEl.className='status'; }
+    catch(e){ saveError(e); }
+  }
+  async function moveJob(job){
+    const kind = job.kind==='day' ? 'week' : 'day';
+    const who = (kind==='day' && job.who==='both') ? me : job.who;
+    const order = Math.max(0, ...state.jobs.map(j=>j.order||0)) + 1;
+    const moved = Object.assign({}, job, {kind, who, order});
+    const i = state.jobs.findIndex(j=>j.id===job.id); if (i>=0) state.jobs[i] = moved;
+    render();
+    if (!db){ statusEl.textContent='Not saved: no connection to the database.'; return; }
+    try { await db.doc('jobs/'+job.id).set(moved); statusEl.textContent = kind==='day' ? 'Moved to today.' : 'Moved to this week.'; statusEl.className='status'; }
     catch(e){ saveError(e); }
   }
   function saveError(e){
